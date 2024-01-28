@@ -4,6 +4,7 @@ from tkinter import ttk
 from tkinter import messagebox
 import random
 import mysql.connector
+import hashlib
 
 #connect to mySQL
 mydb = mysql.connector.connect(
@@ -78,12 +79,18 @@ class Login:
             messagebox.showerror("Error", "Incorrect username")
         #checks the password that corresponds to the username in the database
         else:
-            if password == result[1]:
+            hashed_password = self.hash_password(password)
+
+            if hashed_password == result[1]:
                 print("Access granted")
                 self.root.destroy()
                 self.start_window.destroy()
             else:
                 messagebox.showerror("Error", "Incorrect password")
+    
+    #method that implements a hashing algorithm using SHA-256
+    def hash_password(self, password):
+        return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 class createACC:
     def __init__(self, root, start_window):
@@ -182,7 +189,7 @@ class createACC:
             firstName = self.firstName_entry.get()
             lastName = self.lastName_entry.get()
             username = self.createUN(firstName, lastName)
-            password = self.password1_entry.get()
+            password = self.hash_password(self.password1_entry.get())
             email = self.email_entry.get()
             accounType = self.accounType.get()
             sql = "INSERT INTO accounts (username, password, firstName, lastName, email, accounType) VALUES (%s, %s, %s, %s, %s, %s)"
@@ -197,6 +204,9 @@ class createACC:
             messagebox.showerror("Error", "Password does not meet the requirements")
         else:
             messagebox.showerror("Error", "Not all the fields are filled and password does not meet the requirements")
+    
+    def hash_password(self, password):
+        return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 if __name__ == "__main__":
     root = tk.Tk()
