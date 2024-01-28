@@ -1,0 +1,208 @@
+import tkinter as tk
+from tkinter import *
+from tkinter import ttk
+from tkinter import messagebox
+import random
+import mysql.connector
+
+#connect to mySQL
+mydb = mysql.connector.connect(
+  host="localhost",
+  user="root",
+  password="Ex0-l7321",
+  database="nea"
+)
+mycursor = mydb.cursor()
+
+# creating a class for the starting page
+class startPG:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Starting Page")
+        self.root.geometry("750x200")
+
+        self.message_label = tk.Label(root, text="Welcome to connecTeach", font=("Times", "24", "bold italic"), fg="dark blue")
+        self.message_label.pack(padx=10, pady=10)
+
+        self.opencreateACC_button = tk.Button(root, text="Create Account", font=("Times", 16), bg="light blue", command=self.open_createACC)
+        self.opencreateACC_button.pack(padx=10, pady=10)
+
+        self.openLogin_button = tk.Button(root, text="Log in", font=("Times", 16), bg="light blue", command=self.open_Login)
+        self.openLogin_button.pack(padx=10, pady=10)
+
+    #the function linked to the button create account
+    def open_createACC(self):
+        createACC_window = tk.Toplevel(self.root)
+        createACC(createACC_window, self.root)
+
+    # the function linked to the button Log in
+    def open_Login(self):
+        login_window = tk.Toplevel(self.root)
+        Login(login_window, self.root)
+
+class Login:
+    def __init__(self, root, start_window):
+        self.root = root
+        self.start_window = start_window
+        self.root.title("Log In")
+        self.root.geometry("500x250")
+
+        self.username_label = tk.Label(root, text="Username:", font = ("Arial",12))
+        self.username_label.pack(padx=10, pady=10)
+
+        self.username_entry = tk.Entry(root, font = ("Arial",12))
+        self.username_entry.pack(padx=10, pady=10)
+
+        self.password_label = tk.Label(root, text="Password:", font = ("Arial",12))
+        self.password_label.pack(padx=10, pady=10)
+
+        self.password_entry = tk.Entry(root, font = ("Arial",12), show="*")
+        self.password_entry.pack(padx=10, pady=10)
+
+        self.login_button = tk.Button(root, text="Log in", font = ("Arial",12),  bg="light blue", command=self.authenticatePW)
+        self.login_button.pack(padx=10, pady=10)
+
+    def authenticatePW(self):
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+
+        #checks the database for a matching username
+        sql = "SELECT * FROM accounts WHERE username = %s"
+        #retrives the record with the matching username
+        mycursor.execute(sql, (username,))
+        result = mycursor.fetchone()
+        if username == "" and password == "":
+            messagebox.showerror("Error", "Enter a username or password") #PROBLEM: calls the startPG
+        #if nothing is retrived the username is not in the database
+        elif result is None:
+            messagebox.showerror("Error", "Incorrect username")
+        #checks the password that corresponds to the username in the database
+        else:
+            if password == result[1]:
+                print("Access granted")
+                self.root.destroy()
+                self.start_window.destroy()
+            else:
+                messagebox.showerror("Error", "Incorrect password")
+
+class createACC:
+    def __init__(self, root, start_window):
+        self.root = root
+        self.start_window = start_window
+        self.root.title("Create Account")
+        self.root.geometry("500x700")
+
+        #lets the user enter their details into entry boxes
+        self.firstName_label = tk.Label(root, text="First Name:", font = ("Arial",12))
+        self.firstName_label.pack(padx=10, pady=10)
+
+        self.firstName_entry = tk.Entry(root, font = ("Arial",12))
+        self.firstName_entry.pack(padx=10, pady=10)
+
+        self.lastName_label = tk.Label(root, text="Last Name:", font = ("Arial",12))
+        self.lastName_label.pack(padx=10, pady=10)
+
+        self.lastName_entry = tk.Entry(root, font = ("Arial",12))
+        self.lastName_entry.pack(padx=10, pady=10)
+
+        self.email_label = tk.Label(root, text="Email:", font = ("Arial",12))
+        self.email_label.pack(padx=10, pady=10)
+
+        self.email_entry = tk.Entry(root, font = ("Arial",12))
+        self.email_entry.pack(padx=10, pady=10)
+
+        #specifies the password requirements
+        self.PWreqs_label = tk.Label(root, text="Your password must have at least: \n\
+    - 8 characters \n\
+    - one number \n\
+    - one uppercase letter \n\
+    - one lowercase letter \n\
+    - one symbol", font = ("Arial", 10))
+        self.PWreqs_label.pack(padx=10, pady=10)
+
+        self.password1_label =  tk.Label(root, text="Enter password:", font = ("Arial",12))
+        self.password1_label.pack(padx=10, pady=10)
+
+        self.password1_entry = tk.Entry(root, font = ("Arial",12), show="*")
+        self.password1_entry.pack(padx=10, pady=10)
+
+        self.password2_label = tk.Label(root, text="Re-enter password:", font = ("Arial",12))
+        self.password2_label.pack(padx=10, pady=10)
+
+        self.password2_entry = tk.Entry(root, font = ("Arial",12), show="*")
+        self.password2_entry.pack(padx=10, pady=10)
+
+        self.accounType_label = ttk.Label(root, text = "Select Account type:", font = ("Arial",12))
+        self.accounType_label.pack(padx=10, pady=10)
+        
+        #allows the user to select the type of account they want to make
+        self.accounType = tk.StringVar() 
+        self.accounType_combobox = ttk.Combobox(root, font = ("Arial",12), values=["Student", "Tutor", "Parent"], state="readonly", textvariable=self.accounType) 
+        self.accounType_combobox.pack(padx=10, pady=10)
+
+        #button to check the user's entries and insert all the user's details in the sq
+        self.createACC_button = tk.Button(root, text="Create account", font = ("Arial",12),  bg="light blue", command=self.InProfSQL)
+        self.createACC_button.pack(padx=10, pady=10)
+
+    #method that checks if the password meets the requirements
+    def checkPW(self):
+        password1 = self.password1_entry.get()
+        password2 = self.password2_entry.get()
+        if any(x.isdigit() for x in password1) and any(x.isupper() for x in password1) and any(x.islower() for x in password1) \
+            and any(not x.isalnum() for x in password1) and len(password1) > 8 and password1 == password2:
+                return True
+        else:
+            return False
+
+    #method that checks if all the entries are filled in
+    def checkEntries(self):
+        if all(entry.get() for entry in [self.firstName_entry, self.lastName_entry, self.email_entry, self.password1_entry, self.password2_entry]) and self.accounType.get():
+            return True
+        return False
+
+    #generates a username
+    def createUN(self, firstName, lastName):
+        a = lastName[:3].lower()
+        b = firstName[0].upper()
+        unique = False
+        while not unique:
+            c = str(random.randint(0,9)) + str(random.randint(0,9)) + str(random.randint(0,9)) + str(random.randint(0,9))
+            tempUN = a+b+c
+            #checks database to make sure that generated username is unique
+            sql = "SELECT * FROM accounts WHERE username = %s"
+            mycursor.execute(sql, (tempUN,))
+            result = mycursor.fetchone()
+            if result is None:
+                unique = True
+        return tempUN
+    
+    #checks if all the entries are filled and if the password meets the requirements before inserting all the details into the sql database
+    def InProfSQL(self):
+        if self.checkPW() and self.checkEntries():
+            firstName = self.firstName_entry.get()
+            lastName = self.lastName_entry.get()
+            username = self.createUN(firstName, lastName)
+            password = self.password1_entry.get()
+            email = self.email_entry.get()
+            accounType = self.accounType.get()
+            sql = "INSERT INTO accounts (username, password, firstName, lastName, email, accounType) VALUES (%s, %s, %s, %s, %s, %s)"
+            val = (username, password, firstName, lastName, email, accounType)
+            mycursor.execute(sql, val)
+            mydb.commit()
+            self.root.destroy()
+            self.start_window.destroy()
+        elif self.checkPW():
+            messagebox.showerror("Error", "Not all the fields are filled") #PROBLEM: calls the startPG
+        elif self.checkEntries():
+            messagebox.showerror("Error", "Password does not meet the requirements")
+        else:
+            messagebox.showerror("Error", "Not all the fields are filled and password does not meet the requirements")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    startPG(root)
+    root.mainloop()
+
+#disconnects from mySQL
+mycursor.close()
+mydb.close()
