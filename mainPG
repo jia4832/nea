@@ -1,0 +1,89 @@
+import tkinter as tk
+from tkinter import *
+from tkinter import ttk
+from tkinter import messagebox
+from datetime import datetime, timedelta, date
+from datetime import datetime
+
+class mainPG:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Main Page")
+        self.root.geometry("1500x800")
+        self.root.config(bg="light steel blue")
+
+        # Create a menu bar
+        menubar = tk.Menu(root)
+
+        # adds a singular menu item
+        menubar.add_command(label="Timetable", command=self.showTT)
+
+        # adds a menu item with drop down menu items
+        assignments_menu = tk.Menu(menubar, tearoff=0)
+        assignments_menu.add_command(label="Upcoming", command=self.asd)
+        assignments_menu.add_command(label="Overdue", command=self.asd)
+        assignments_menu.add_command(label="Completed", command=self.asd)
+        menubar.add_cascade(label="Assignments", menu=assignments_menu) 
+
+        tutors_menu = tk.Menu(menubar, tearoff=0)
+        tutors_menu.add_command(label="Find Tutors", command=self.asd)
+        tutors_menu.add_command(label="My Tutors", command=self.asd)
+        menubar.add_cascade(label="Tutors", menu=tutors_menu)
+
+        settings_menu = tk.Menu(menubar, tearoff=0)
+        settings_menu.add_command(label="Profile", command=self.asd)
+        settings_menu.add_command(label="Exit", command=root.destroy)
+        menubar.add_cascade(label="Settings", menu=settings_menu)
+
+        root.config(menu=menubar)
+
+    def asd(self):
+        messagebox.showinfo("asd", "Incomplete")
+
+    def showTT(self):
+        timetable(self.root)
+
+
+class timetable(mainPG):
+    def __init__(self, root):
+        super().__init__(root)
+
+        self.root.title("Timetable")
+        self.root.geometry("1500x800")
+        
+        for i in range(9): #create the grid
+            root.columnconfigure(i, weight=1, minsize=20)
+            for j in range(9):
+                root.rowconfigure(i, weight=1, minsize=20)
+        
+        #creates the timetable grid within the grid
+        for i in range(1,8):
+            for j in range(1,8):
+                root.columnconfigure(i, weight=1, minsize=200)
+                root.rowconfigure(i, weight=1, minsize=100)
+                empty_label = tk.Label(text="", font=("Arial", 30), borderwidth=1, relief="solid")
+                empty_label.grid(row = i, column = j, sticky="nesw")
+        
+        mon = tk.Label(text="Monday", font=("Arial", 20), borderwidth=1, relief="solid", fg = "white", bg="medium blue")
+        mon.grid(row = 1, column = 1, sticky="new")
+        tue = tk.Label(text="Tuesday", font=("Arial", 20), borderwidth=1, relief="solid", fg = "white", bg="medium blue")
+        tue.grid(row = 2, column = 1, sticky="new")
+        wed = tk.Label(text="Wednesday", font=("Arial", 20), borderwidth=1, relief="solid", fg = "white", bg="medium blue")
+        wed.grid(row = 3, column = 1, sticky="new")
+        thu = tk.Label(text="Thursday", font=("Arial", 20), borderwidth=1, relief="solid", fg = "white", bg="medium blue")
+        thu.grid(row = 4, column = 1, sticky="new")
+        fri = tk.Label(text="Friday", font=("Arial", 20), borderwidth=1, relief="solid", fg = "white", bg="medium blue")
+        fri.grid(row = 5, column = 1, sticky="new")
+        sat = tk.Label(text="Saturday", font=("Arial", 20), borderwidth=1, relief="solid", fg = "white", bg="medium blue")
+        sat.grid(row = 6, column = 1, sticky="new")
+        sun = tk.Label(text="Sunday", font=("Arial", 20), borderwidth=1, relief="solid", fg = "white", bg="medium blue")
+        sun.grid(row = 7, column = 1, sticky="new")
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    mainPG(root)
+    root.mainloop()
+
+
+
