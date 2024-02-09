@@ -6,24 +6,25 @@ from datetime import datetime, timedelta, date
 from datetime import datetime
 import calendar
 
-class mainPG:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Main Page")
-        self.root.geometry("1500x800")
-        self.root.config(bg="light steel blue")
+class mainPG(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("Main Page")
+        self.geometry("1440x800")
+        self.config(bg="light steel blue")
 
         # Create a menu bar
-        menubar = tk.Menu(root)
+        menubar = tk.Menu()
 
         # adds a singular menu item
         menubar.add_command(label="Timetable", command=self.showTT)
 
         # adds a menu item with drop down menu items
         assignments_menu = tk.Menu(menubar, tearoff=0)
-        assignments_menu.add_command(label="Upcoming", command=self.asd)
-        assignments_menu.add_command(label="Overdue", command=self.asd)
-        assignments_menu.add_command(label="Completed", command=self.asd)
+        assignments_menu.add_command(label="Upcoming", command=self.showASIGN)
+        assignments_menu.add_command(label="Overdue", command=self.showASIGN)
+        assignments_menu.add_command(label="Completed", command=self.showASIGN)
         menubar.add_cascade(label="Assignments", menu=assignments_menu) 
 
         tutors_menu = tk.Menu(menubar, tearoff=0)
@@ -33,72 +34,142 @@ class mainPG:
 
         settings_menu = tk.Menu(menubar, tearoff=0)
         settings_menu.add_command(label="Profile", command=self.asd)
-        settings_menu.add_command(label="Exit", command=root.destroy)
+        settings_menu.add_command(label="Exit", command=self.destroy)
         menubar.add_cascade(label="Settings", menu=settings_menu)
 
-        root.config(menu=menubar)
+        self.config(menu=menubar)
 
+        self.sub_frame = tk.Frame(self)
+        self.sub_frame.grid(row=0, column=0)
+
+        self.frame1 = timetable(self.sub_frame)
+        self.frame2 = assignments(self.sub_frame)
+
+        self.showTT()
+    
     def asd(self):
         messagebox.showinfo("asd", "Incomplete")
 
     def showTT(self):
-        timetable(self.root)
+        self.frame1.lift()
+    
+    def showASIGN(self):
+        self.frame2.lift()
 
-
-class timetable(mainPG):
+class timetable(tk.Frame):
     def __init__(self, root):
         super().__init__(root)
-
-        self.root.title("Timetable")
-        self.root.geometry("1500x800")
-
+        self.config(bg="light steel blue")
+        self.grid(row=0, column=0, sticky="nsew")
+    
         self.current_date = datetime.now().date()
         
-        for i in range(10):
-            root.columnconfigure(i, weight=1, minsize=20)
-            root.rowconfigure(i, weight=1, minsize=20)
+        for i in range(11):
+            self.columnconfigure(i, weight=1, minsize=20)
+            self.rowconfigure(i, weight=1, minsize=20)
         
         # Create the timetable grid within the main grid
-        for i in range(2, 9):
+        for i in range(3, 10):
             for j in range(1, 8):
-                root.columnconfigure(j, weight=1, minsize=200)
-                root.rowconfigure(i, weight=1, minsize=100)
-                empty_label = self.create_default_label(root)
+                self.columnconfigure(j, weight=1, minsize=200)
+                self.rowconfigure(i, weight=1, minsize=100)
+                empty_label = self.create_default_label(self)
                 empty_label.grid(row=i, column=j, sticky="nesw")
 
-        MandY_label = self.create_default_label(root, text=self.current_date.strftime("%B %Y"), font=("Arial", 20), fg="white", bg="steel blue")
-        MandY_label.grid(row=0, column=3, columnspan=3, sticky="nesw")
+        MandY_label = self.create_default_label(self, text=self.current_date.strftime("%B %Y"), font=("Arial", 20), fg="white", bg="steel blue")
+        MandY_label.grid(row=1, column=3, columnspan=3, sticky="nesw")
 
         # Days of the week labels
         days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        for i, day in enumerate(days, start=2):
-            label = self.create_default_label(root, text=day, font=("Arial", 20), fg="white", bg="steel blue")
+        for i, day in enumerate(days, start=3): #enumerate returns pairs of index and item as you iterate
+            label = self.create_default_label(self, text=day, font=("Arial", 20), fg="white", bg="steel blue")
             label.grid(row=i, column=1, sticky="new")
 
         self.HighLightCurrentDay()
+        self.RestOfWeek()
 
-    def create_default_label(self, parent, **kwargs):
+    def create_default_label(self, parent, **kwargs): # creates a dictionary for the defalut label format
         default_style = {
             "font": ("Arial", 15),
             "borderwidth": 1,
             "relief": "solid",
-            **kwargs}
+            **kwargs} #function can accept any number of keyword arguments
         return tk.Label(parent, **default_style)
-    
-    def HighLightCurrentDay(self):
+
+    def get_date_values(self):
         now = datetime.now()
         day_of_week = now.weekday()
-        DOWinTT = day_of_week + 1 
+        current_month_days = calendar.monthrange(now.year, now.month)[1]
+        year = now.year
+        month = now.month
         today = date.today().day
-        labelTDY = self.create_default_label(root, text=str(today), font=("Arial", 42), relief="solid")
-        labelTDY.grid(row=DOWinTT, column=1, sticky="esw")
+        return today, day_of_week, current_month_days, year, month
+    
+    def HighLightCurrentDay(self):
+        today, day_of_week = self.get_date_values()[0:2]
+        rowpos = day_of_week + 3    
+        labelTDY = self.create_default_label(self, text=str(today), font=("Arial", 42), relief="solid")
+        labelTDY.grid(row=rowpos, column=1, sticky="esw")
         for i in range(2,8):
-            current_label = self.create_default_label(root, text="",fg="white", bg="steel blue")
-            current_label.grid(row=DOWinTT, column=i, sticky="nesw")
+            current_label = self.create_default_label(self, text="",fg="white", bg="steel blue")
+            current_label.grid(row=rowpos, column=i, sticky="nesw")
+    
+    def RestOfWeek(self):
+        today, day_of_week, current_month_days, year, month = self.get_date_values()
+        temp1 = today + 1
+        up_dow = day_of_week + 1 #upper bound
+        temp2 = today - 1
+        lw_dow = day_of_week - 1 #lower bound
+        while up_dow < 7 and temp1 <= current_month_days:
+                WDlabel = self.create_default_label(self, text=str(temp1), font=("Arial", 42), relief="solid")
+                WDlabel.grid(row=up_dow+3, column=1, sticky="esw")
+                temp1 += 1
+                up_dow += 1
+        while lw_dow > -1 and temp2 >= 1:
+                WDlabel = self.create_default_label(self, text=str(temp2), font=("Arial", 42), relief="solid")
+                WDlabel.grid(row=lw_dow+3, column=1, sticky="esw")
+                temp2 -= 1
+                lw_dow -= 1
+        if self.check_42months_inweek() == "pre": #if the week contains days from the prior month
+            if month == 1: #if month is january
+                prev_month = 12 #prior month would be december of the last year
+                year -= 1
+            else:
+                prev_month = month - 1
+            days_in_previous_month = calendar.monthrange(year, prev_month)[1]
+            temp3 = days_in_previous_month
+            while lw_dow > -1:
+                WDlabel = self.create_default_label(self, text=str(temp3), font=("Arial", 42), relief="solid")
+                WDlabel.grid(row=lw_dow+3, column=1, sticky="esw")
+                temp3 -= 1
+                lw_dow -= 1
+        elif self.check_42months_inweek() == "post": #if the week contains days from the next month
+            temp4 = 1
+            while up_dow < 7:
+                WDlabel = self.create_default_label(self, text=str(temp4), font=("Arial", 42), relief="solid")
+                WDlabel.grid(row=up_dow+3, column=1, sticky="esw")
+                temp4 += 1
+                up_dow += 1
+
+    def check_42months_inweek(self): #method to check if the week contains days from other months
+        today, day_of_week, current_month_days = self.get_date_values()[0:3]
+        y = current_month_days - today
+        if (1 <= today <= 6) and (today-1) < day_of_week:
+            return "pre"
+        elif y <= 5 and (day_of_week + y) <= 5:
+            return "post"
+
+class assignments(tk.Frame):
+    def __init__(self, root):
+        super().__init__(root)
+        self.config(bg="light green")
+        self.grid(row=0, column=0, sticky="nesw")
+
+        self.label = tk.Label(self, text="HI", font=("Arial", 100))
+        self.label.pack(padx=10, pady=10)
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    mainPG(root)
-    root.mainloop()
+    a = mainPG()
+    a.mainloop()
 
 
