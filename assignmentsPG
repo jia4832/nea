@@ -1,0 +1,52 @@
+import tkinter as tk
+from tkinter import *
+from tkinter import ttk
+
+def Main():
+    done = False
+    while done == False:
+        entry = input("Create a flashcard pack:")
+        if entry == "yes":
+            P = pack()
+            total = P.addflashcard()
+            P.displayPack()
+            print("Number of flashcards added", total)
+        else:
+            done = True
+
+class pack():
+    def __init__(self): 
+        self._pack = []
+    
+    def addflashcard(self):
+        self._done = False
+        total = 0
+        while self._done == False:
+            self._qu = input("Add flashcard (type done when finished) \nQuestion:")
+            if self._qu == "done":
+                self._done = True
+            else:
+                FC = flashcard()
+                FC.getQUandANS(self._qu)
+                self._pack.append(FC)
+                total += 1
+        return total 
+    
+    def displayPack(self):
+        for i in range (0, len(self._pack)):
+            print(self._pack[i].displayFC())
+
+class flashcard():
+    def __init__(self):
+        self._question = ""
+        self._answer = ""
+
+    def getQUandANS(self, question):
+        self._question = question
+        self._answer = input("Answer:")
+
+    def displayFC(self):
+        return self._question, self._answer
+
+if __name__ == "__main__":
+    Main()
