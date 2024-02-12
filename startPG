@@ -66,17 +66,28 @@ class Login:
     def authenticatePW(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
+        letter = username[-1]
+
+        if letter == "S":
+            table_name = "student_accounts"
+            id_name = "student_ID"
+        elif letter == "P":
+            table_name = "parent_accounts"
+            id_name = "parent_ID"
+        else:
+            table_name = "tutor_accounts"
+            id_name = "tutor_ID"
 
         #checks the database for a matching username
-        sql = "SELECT * FROM accounts WHERE username = %s"
+        sql = f"SELECT * FROM {table_name} WHERE {id_name} = %s"
         #retrives the record with the matching username
         mycursor.execute(sql, (username,))
         result = mycursor.fetchone()
         if username == "" and password == "":
-            messagebox.showerror("Error", "Enter a username or password") #PROBLEM: calls the startPG
+            messagebox.showerror("Error", "Enter a username and password", parent=self.root) 
         #if nothing is retrived the username is not in the database
-        elif result is None:
-            messagebox.showerror("Error", "Incorrect username")
+        elif result is None: 
+            messagebox.showerror("Error", "Username does not exist", parent=self.root)
         #checks the password that corresponds to the username in the database
         else:
             hashed_password = self.hash_password(password)
@@ -86,7 +97,7 @@ class Login:
                 self.root.destroy()
                 self.start_window.destroy()
             else:
-                messagebox.showerror("Error", "Incorrect password")
+                messagebox.showerror("Error", "Incorrect password", parent=self.root)
     
     #method that implements a hashing algorithm using SHA-256
     def hash_password(self, password):
@@ -148,7 +159,7 @@ class createACC:
         self.accounType_combobox.pack(padx=10, pady=10)
 
         #button to check the user's entries and insert all the user's details in the sq
-        self.createACC_button = tk.Button(root, text="Create account", font = ("Arial",12),  bg="light blue", command=self.InProfSQL)
+        self.createACC_button = tk.Button(root, text="Create account", font = ("Arial",12),  bg="light blue", command=self.check_details)
         self.createACC_button.pack(padx=10, pady=10)
 
     #method that checks if the password meets the requirements
@@ -166,17 +177,35 @@ class createACC:
         if all(entry.get() for entry in [self.firstName_entry, self.lastName_entry, self.email_entry, self.password1_entry, self.password2_entry]) and self.accounType.get():
             return True
         return False
+    
+    def sql_names(self):
+        accounType = self.accounType.get()
+        if accounType == "Student":
+            table_name = "student_accounts"
+            id_name = "student_ID"
+            letter = "S"
+        elif accounType == "Parent":
+            table_name = "parent_accounts"
+            id_name = "parent_ID"
+            letter = "P"
+        else:
+            table_name = "tutor_accounts"
+            id_name = "tutor_ID"
+            letter = "T"
+        return table_name, id_name, letter
 
     #generates a username
     def createUN(self, firstName, lastName):
         a = lastName[:3].lower()
         b = firstName[0].upper()
+        sql_names = self.sql_names()
+        d = sql_names[2]
         unique = False
         while not unique:
             c = str(random.randint(0,9)) + str(random.randint(0,9)) + str(random.randint(0,9)) + str(random.randint(0,9))
-            tempUN = a+b+c
+            tempUN = a+b+c+d
             #checks database to make sure that generated username is unique
-            sql = "SELECT * FROM accounts WHERE username = %s"
+            sql = f"SELECT * FROM {sql_names[0]} WHERE {sql_names[1]} = %s"
             mycursor.execute(sql, (tempUN,))
             result = mycursor.fetchone()
             if result is None:
@@ -184,26 +213,30 @@ class createACC:
         return tempUN
     
     #checks if all the entries are filled and if the password meets the requirements before inserting all the details into the sql database
-    def InProfSQL(self):
+    def check_details(self):
         if self.checkPW() and self.checkEntries():
-            firstName = self.firstName_entry.get()
-            lastName = self.lastName_entry.get()
-            username = self.createUN(firstName, lastName)
-            password = self.hash_password(self.password1_entry.get())
-            email = self.email_entry.get()
-            accounType = self.accounType.get()
-            sql = "INSERT INTO accounts (username, password, firstName, lastName, email, accounType) VALUES (%s, %s, %s, %s, %s, %s)"
-            val = (username, password, firstName, lastName, email, accounType)
-            mycursor.execute(sql, val)
-            mydb.commit()
-            self.root.destroy()
-            self.start_window.destroy()
+            self.insert_sql()
         elif self.checkPW():
-            messagebox.showerror("Error", "Not all the fields are filled") #PROBLEM: calls the startPG
+            messagebox.showerror("Error", "Not all the fields are filled", parent=self.root) 
         elif self.checkEntries():
-            messagebox.showerror("Error", "Password does not meet the requirements")
+            messagebox.showerror("Error", "Password does not meet the requirements", parent=self.root)
         else:
-            messagebox.showerror("Error", "Not all the fields are filled and password does not meet the requirements")
+            messagebox.showerror("Error", "Not all the fields are filled and password does not meet the requirements", parent=self.root)
+
+    def insert_sql(self):
+        sql_names = self.sql_names()
+        firstName = self.firstName_entry.get()
+        lastName = self.lastName_entry.get()
+        username = self.createUN(firstName, lastName)
+        password = self.hash_password(self.password1_entry.get())
+        email = self.email_entry.get()
+        sql = f"INSERT INTO {sql_names[0]} ({sql_names[1]}, password, firstName, lastName, email) VALUES (%s, %s, %s, %s, %s)"
+        val = (username, password, firstName, lastName, email)
+        mycursor.execute(sql, val)
+        mydb.commit()
+        print(username)
+        self.root.destroy()
+        self.start_window.destroy()
     
     def hash_password(self, password):
         return hashlib.sha256(password.encode("utf-8")).hexdigest()
