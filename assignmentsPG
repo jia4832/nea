@@ -1,52 +1,451 @@
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
+from tkinter import messagebox
+from datetime import datetime, timedelta, date
+from datetime import datetime
+import calendar
+import random
+import mysql.connector
+import hashlib
 
-def Main():
-    done = False
-    while done == False:
-        entry = input("Create a flashcard pack:")
-        if entry == "yes":
-            P = pack()
-            total = P.addflashcard()
-            P.displayPack()
-            print("Number of flashcards added", total)
-        else:
-            done = True
+#connect to mySQL
+mydb = mysql.connector.connect(
+  host="localhost",
+  user="root",
+  password="Ex0-l7321",
+  database="nea"
+)
+mycursor = mydb.cursor()
 
-class pack():
-    def __init__(self): 
-        self._pack = []
-    
-    def addflashcard(self):
-        self._done = False
-        total = 0
-        while self._done == False:
-            self._qu = input("Add flashcard (type done when finished) \nQuestion:")
-            if self._qu == "done":
-                self._done = True
-            else:
-                FC = flashcard()
-                FC.getQUandANS(self._qu)
-                self._pack.append(FC)
-                total += 1
-        return total 
-    
-    def displayPack(self):
-        for i in range (0, len(self._pack)):
-            print(self._pack[i].displayFC())
-
-class flashcard():
+class mainPG(tk.Tk):
     def __init__(self):
-        self._question = ""
-        self._answer = ""
+        super().__init__()
 
-    def getQUandANS(self, question):
-        self._question = question
-        self._answer = input("Answer:")
+        self.title("Tutor: Main Page")
+        self.geometry("1440x810")
+        self.config(bg="light steel blue")
 
-    def displayFC(self):
-        return self._question, self._answer
+        self.create_menu_bar()
+
+        self.sub_frame = tk.Frame(self)
+        self.sub_frame.grid(row=0, column=0)
+
+        self.frame1 = timetable(self.sub_frame)
+        self.frame2 = create_assignments(self.sub_frame)
+        self.frame3 = student_work(self.sub_frame)
+
+        self.showCA()
+
+    def create_menu_bar(self):
+        # Create a menu bar
+        menubar = tk.Menu()
+
+        # adds a singular menu item
+        menubar.add_command(label="Timetable", command=self.showTT)
+
+        # adds a menu item with drop down menu items
+        assignments_menu = tk.Menu(menubar, tearoff=0)
+        assignments_menu.add_command(label="Create", command=self.showCA)
+        assignments_menu.add_command(label="Students", command=self.showSW)
+        menubar.add_cascade(label="Assignments", menu=assignments_menu) 
+
+        tutors_menu = tk.Menu(menubar, tearoff=0)
+        tutors_menu.add_command(label="Recent", command=self.asd)
+        tutors_menu.add_command(label="Cilents", command=self.asd)
+        tutors_menu.add_command(label="Requests", command=self.asd)
+        menubar.add_cascade(label="Messages", menu=tutors_menu)
+
+        settings_menu = tk.Menu(menubar, tearoff=0)
+        settings_menu.add_command(label="Profile", command=self.asd)
+        settings_menu.add_command(label="Payments", command=self.asd)
+        settings_menu.add_command(label="Exit", command=self.destroy)
+        menubar.add_cascade(label="Settings", menu=settings_menu)
+
+        self.config(menu=menubar)
+    
+    def asd(self):
+        messagebox.showinfo("asd", "Incomplete")
+
+    def showTT(self):
+        self.frame1.lift()
+
+    def showCA(self):
+        self.frame2.lift()
+
+    def showSW(self):
+        self.frame3.lift()
+
+class timetable(tk.Frame):
+    def __init__(self, root):
+        super().__init__(root)
+        self.config(bg="light steel blue")
+        self.grid(row=0, column=0, sticky="nesw")
+    
+        self.current_date = datetime.now().date()
+        
+        for i in range(11):
+            self.columnconfigure(i, weight=1, minsize=20)
+            self.rowconfigure(i, weight=1, minsize=20)
+        
+        # Create the timetable grid within the main grid
+        for i in range(3, 10):
+            for j in range(1, 8):
+                self.columnconfigure(j, weight=1, minsize=200)
+                self.rowconfigure(i, weight=1, minsize=100)
+                empty_label = self.create_default_label(self)
+                empty_label.grid(row=i, column=j, sticky="nesw")
+
+        MandY_label = self.create_default_label(self, text=self.current_date.strftime("%B %Y"), font=("Arial", 20), fg="white", bg="steel blue")
+        MandY_label.grid(row=1, column=3, columnspan=3, sticky="nesw")
+
+        # Days of the week labels
+        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        for i, day in enumerate(days, start=3): #enumerate returns pairs of index and item as you iterate
+            label = self.create_default_label(self, text=day, font=("Arial", 20), fg="white", bg="steel blue")
+            label.grid(row=i, column=1, sticky="new")
+
+        self.month_button = tk.Button(self, text="Month", font=("Arial", 20), fg = "white", bg="steel blue", borderwidth= 1, relief="solid", command=self.open_month_window)
+        self.month_button.grid(row=1, column=7, sticky="nesw")
+
+        self.HighLightCurrentDay()
+        self.RestOfWeek()
+    
+    def create_default_label(self, parent, **kwargs): # creates a dictionary for the defalut label format
+        default_style = {
+            "font": ("Arial", 15),
+            "borderwidth": 1,
+            "relief": "solid",
+            **kwargs} #function can accept any number of keyword arguments
+        return tk.Label(parent, **default_style)
+
+    def get_date_values(self):
+        now = datetime.now()
+        day_of_week = now.weekday()
+        current_month_days = calendar.monthrange(now.year, now.month)[1]
+        year = now.year
+        month = now.month
+        today = date.today().day
+        return today, day_of_week, current_month_days, year, month
+    
+    def open_month_window(self):
+        self.selected_date = datetime.now().date()
+        new_window = tk.Toplevel(self)
+        new_window.config(bg="light steel blue")
+        new_window.title(self.current_date.strftime("%B"))
+        new_window.geometry("400x400")
+
+        for i in range(3):
+            new_window.columnconfigure(i, weight=1, minsize=3)
+            new_window.rowconfigure(i, weight=1, minsize=1)
+
+        # Create labels to display month and year
+        self.month_label = tk.Label(new_window, text="", font=("Arial", 30), fg="white", bg="steel blue")
+        self.month_label.grid(row=1, column=1)
+
+        # Create a calendar frame to hold the calendar grid
+        self.calendar_frame = tk.Frame(new_window, bg="light steel blue")
+        self.calendar_frame.grid(row=2, column=1)
+
+        # Update the calendar initially
+        self.update_calendar()
+
+        # Schedule the update every second
+        self.after(1000, self.update_calendar)
+
+    def update_calendar(self):
+        # Update the month label
+        self.month_label.config(text=self.current_date.strftime("%B %Y"))
+
+        # Find the day of the week for the 1st day of the month
+        first_day_weekday = date(self.current_date.year, self.current_date.month, 1).weekday()
+
+        # Get the number of days in the month
+        num_days = (date(self.current_date.year, self.current_date.month % 12 + 1, 1) - timedelta(days=1)).day
+
+        # Update the calendar grid
+        for i in range(6):
+            for j in range(7):
+                day = i * 7 + j + 1 - first_day_weekday
+                day_label = tk.Label(self.calendar_frame, text=str(day) if 1 <= day <= num_days else "", font=("Arial", 30), bg="light steel blue")
+
+                # Highlight the current date
+                if day == self.selected_date.day and self.current_date.month == self.selected_date.month and self.current_date.year == self.selected_date.year:
+                    day_label.config(fg="white", bg="steel blue")
+
+                day_label.grid(row=i, column=j)
+    
+    def HighLightCurrentDay(self):
+        today, day_of_week = self.get_date_values()[0:2]
+        rowpos = day_of_week + 3    
+        labelTDY = self.create_default_label(self, text=str(today), font=("Arial", 42), relief="solid")
+        labelTDY.grid(row=rowpos, column=1, sticky="esw")
+        for i in range(2,8):
+            current_label = self.create_default_label(self, text="",fg="white", bg="steel blue")
+            current_label.grid(row=rowpos, column=i, sticky="nesw")
+    
+    def RestOfWeek(self):
+        today, day_of_week, current_month_days, year, month = self.get_date_values()
+        temp1 = today + 1
+        up_dow = day_of_week + 1 #upper bound
+        temp2 = today - 1
+        lw_dow = day_of_week - 1 #lower bound
+        while up_dow < 7 and temp1 <= current_month_days:
+                WDlabel = self.create_default_label(self, text=str(temp1), font=("Arial", 42), relief="solid")
+                WDlabel.grid(row=up_dow+3, column=1, sticky="esw")
+                temp1 += 1
+                up_dow += 1
+        while lw_dow > -1 and temp2 >= 1:
+                WDlabel = self.create_default_label(self, text=str(temp2), font=("Arial", 42), relief="solid")
+                WDlabel.grid(row=lw_dow+3, column=1, sticky="esw")
+                temp2 -= 1
+                lw_dow -= 1
+        if self.check_42months_inweek() == "pre": #if the week contains days from the prior month
+            if month == 1: #if month is january
+                prev_month = 12 #prior month would be december of the last year
+                year -= 1
+            else:
+                prev_month = month - 1
+            days_in_previous_month = calendar.monthrange(year, prev_month)[1]
+            temp3 = days_in_previous_month
+            while lw_dow > -1:
+                WDlabel = self.create_default_label(self, text=str(temp3), font=("Arial", 42), relief="solid")
+                WDlabel.grid(row=lw_dow+3, column=1, sticky="esw")
+                temp3 -= 1
+                lw_dow -= 1
+        elif self.check_42months_inweek() == "post": #if the week contains days from the next month
+            temp4 = 1
+            while up_dow < 7:
+                WDlabel = self.create_default_label(self, text=str(temp4), font=("Arial", 42), relief="solid")
+                WDlabel.grid(row=up_dow+3, column=1, sticky="esw")
+                temp4 += 1
+                up_dow += 1
+
+    def check_42months_inweek(self): #method to check if the week contains days from other months
+        today, day_of_week, current_month_days = self.get_date_values()[0:3]
+        y = current_month_days - today
+        if (1 <= today <= 6) and (today-1) < day_of_week:
+            return "pre"
+        elif y <= 5 and (day_of_week + y) <= 5:
+            return "post"
+
+class create_assignments(tk.Frame):
+    def __init__(self, root):
+        super().__init__(root)
+        self.config(bg="light steel blue")
+        self.grid(row=0, column=0, sticky="nesw")
+
+        for i in range(6):
+            self.rowconfigure(i, weight=1, minsize=20)
+            for j in range(3):
+                self.columnconfigure(j, weight=1, minsize=20)
+
+        self.create_pack_button = self.create_default_button(self, text="New flashcard pack", command=create_flashcard_pack)
+        self.create_pack_button.grid(row=1, column=1, sticky="nsew")
+
+        self.label = self.create_default_label(self, text="Find flashcard pack:")
+        self.label.grid(row=3, column=1, sticky="nesw")
+
+        self.find_entry = Entry(self, font=("Arial", 20), bg="white", borderwidth=1, relief="solid", justify="center")
+        self.find_entry.grid(row=4, column=1, sticky="nesw")
+
+        self.find_button = self.create_default_button(self, text="Enter", font=("Arial", 15), command=self.find_pack_ID)
+        self.find_button.grid(row=4, column=2)
+
+    def create_default_label(self, parent, **kwargs): # creates a dictionary for the defalut label format
+        default_style = {
+            "font": ("Arial", 20),
+            "borderwidth": 1,
+            "relief": "solid",
+            "bg": "steel blue",
+            "fg": "white",
+            **kwargs} #function can accept any number of keyword arguments
+        return tk.Label(parent, **default_style)
+    
+    def create_default_button(self, parent, **kwargs): # creates a dictionary for the defalut label format
+        default_style = {
+            "font": ("Arial", 20),
+            "borderwidth": 1,
+            "relief": "solid",#
+            "bg": "steel blue",
+            "fg": "white",
+            **kwargs} #function can accept any number of keyword arguments
+        return tk.Button(parent, **default_style)
+
+    def find_pack_ID(self):
+        pack_ID = self.find_entry.get()
+        sql = f"SELECT * FROM flashcard_packs WHERE pack_ID = %s"
+        mycursor.execute(sql, (pack_ID,))
+        result = mycursor.fetchone()
+
+        if result == None:
+            messagebox.showerror("Error", "Cannot find pack")
+        else:
+            display_flashcards(result).mainloop()
+
+class create_flashcard_pack(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("New flashcard pack")
+        self.geometry("400x200")
+        self.config(bg="light steel blue")
+        
+        self.label = Label(self, text="Enter Pack Name:", font=("Arial", 20), bg="light steel blue")
+        self.label.pack(padx=10, pady=10)
+
+        self.pack_name_entry = Entry(self, font=("Arial", 20), borderwidth=1, relief="solid", justify="center")
+        self.pack_name_entry.pack(padx=10, pady=10)
+
+        # Button to submit the entry
+        self.submit_button = tk.Button(self, text="Create Pack", font=("Arial", 15), bg="steel blue", fg="white", command=self.check_pack_name)
+        self.submit_button.pack(padx=10, pady=10)
+    
+    def check_pack_name(self):
+        self.pack_name = self.pack_name_entry.get().strip()
+        if not self.pack_name:
+            messagebox.showerror("Error", "No pack name", parent=self)
+        else:
+            self.pack_creator = "test"
+            sql = f"INSERT INTO flashcard_packs (pack_name, pack_creator) VALUES (%s, %s)"
+            val = (self.pack_name, self.pack_creator)
+            mycursor.execute(sql, val)
+            mydb.commit()
+            self.add_flashcards()
+    
+    def add_flashcards(self):
+        self.pack_name = self.pack_name_entry.get().strip()
+        self.window = tk.Toplevel()
+        self.window.title(self.pack_name)
+        self.window.geometry("800x300")
+        self.window.minsize(800, 300)
+
+        for i in range(5):
+            self.window.columnconfigure(i, weight=1, minsize=20)
+            for j in range(4):
+                self.window.rowconfigure(j, weight=1, minsize=20)
+                label = tk.Label(self.window, text="", bg="light steel blue")
+                label.grid(row=j, column=i, sticky="nsew")
+
+        self.qu_label = Label(self.window, text="Question",font=("Arial", 20), bg="steel blue", fg="white", borderwidth=1, relief="solid")
+        self.qu_label.grid(row=0, column=1, sticky="esw")
+
+        self.ans_label = Label(self.window, text="Answer",font=("Arial", 20), bg="steel blue", fg="white", borderwidth=1, relief="solid")
+        self.ans_label.grid(row=0, column=3, sticky="esw")
+
+        self.qu_entry = Text(self.window, font=("Arial", 15), wrap="word", height=3, width=50)
+        self.qu_entry.grid(row=1, rowspan=2, column=1, sticky="nesw")
+
+        self.ans_entry = Text(self.window, font=("Arial", 15), wrap="word", height=3, width=50)
+        self.ans_entry.grid(row=1, rowspan=2, column=3, sticky="nesw")
+
+        self.add_FC_button = Button(self.window, text="Add flashcard", font=("Arial", 15), bg="steel blue", fg="white", borderwidth=1, relief="solid", command= self.insert_FC_sql)
+        self.add_FC_button.grid(row=3, column=1, sticky="w")
+
+        self.done_button = Button(self.window, text="Done", font=("Arial", 15), bg="steel blue", fg="white", borderwidth=1, relief="solid", command= lambda:self.complete_pack(self.window))
+        self.done_button.grid(row=3, column=3, sticky="e")
+
+    def insert_FC_sql(self):
+        self.pack_name = self.pack_name_entry.get().strip()
+        sql_select = "SELECT pack_ID FROM flashcard_packs WHERE pack_name = %s"
+        mycursor.execute(sql_select, (self.pack_name,))
+        result = mycursor.fetchone()
+
+        if result:
+            pack_ID = result[0]
+            question = self.qu_entry.get("1.0", "end-1c")
+            answer = self.ans_entry.get("1.0", "end-1c")
+
+            sql_insert = "INSERT INTO flashcards (pack_ID, question, answer) VALUES (%s, %s, %s)"
+            val = (pack_ID, question, answer)
+            mycursor.execute(sql_insert, val)
+            mydb.commit()
+
+            self.qu_entry.delete(1.0, "end-1c")
+            self.ans_entry.delete(1.0, "end-1c")
+
+
+    def complete_pack(self, window):
+        self.check_empty_pack(window)
+        self.window.destroy()
+        self.destroy()
+
+    def check_empty_pack(self, window):
+        self.pack_name = self.pack_name_entry.get().strip()
+        sql = "DELETE FROM flashcard_packs WHERE pack_name = %s AND pack_ID NOT IN (SELECT pack_ID FROM flashcards)"
+        mycursor.execute(sql, (self.pack_name,))
+        mydb.commit()
+
+        if mycursor.rowcount == 0: #checks for any deleted rows
+            messagebox.showinfo("Info", "Pack created successfully", parent=window)
+        else:
+            messagebox.showerror("Error", "Empty pack: deletion", parent=window)
+
+
+class display_flashcards(tk.Tk):
+    def __init__(self, result):
+        super().__init__()
+
+        self.title(result[1])
+        self.geometry("1000x600")
+        self.minsize(1000, 600)
+        self.config(bg="light steel blue")
+        self.pack_ID = result[0]
+        self.flashcards = self.find_flashcards()
+
+        for i in range(3):
+            self.columnconfigure(i, weight=1, minsize=20)
+            for j in range(4):
+                self.rowconfigure(j, weight=1, minsize=20)
+                label = tk.Label(self, text="", bg="light steel blue")
+                label.grid(row=j, column=i, sticky="nesw")
+        
+        self.i = 0
+        self.insert_flashcard = Button(self, text=self.flashcards[self.i][2], font=("Arial", 20), bg="steel blue", fg= "white", wraplength=200, borderwidth=1, relief="solid", height=8, width=35, command=self.show_answer)
+        self.insert_flashcard.grid(row=1, column=1, sticky="nesw")
+
+        self.back_button = Button(self, text="Back", font=("Arial", 20), bg="steel blue", fg= "white", borderwidth=1, relief="solid", command=self.prev_FC)
+        self.back_button.grid(row=2, column=1, sticky="sw")
+
+        self.next_button = Button(self, text="Next", font=("Arial", 20), bg="steel blue", fg= "white", borderwidth=1, relief="solid", command=self.next_FC)
+        self.next_button.grid(row=2, column=1, sticky="es")
+    
+    def show_answer(self):
+        if self.insert_flashcard.cget("text") == self.flashcards[self.i][2]:
+            self.insert_flashcard.config(text=self.flashcards[self.i][3])
+        else:
+            self.insert_flashcard.config(text=self.flashcards[self.i][2])
+
+    def prev_FC(self):
+        if self.i == 0:
+            messagebox.showerror("Error", "First flashcard", parent=self)
+        else:
+            self.i -= 1
+            self.insert_flashcard.config(text=self.flashcards[self.i][2])
+    
+    def next_FC(self):
+        if self.i == len(self.flashcards) - 1:
+            messagebox.showerror("Error", "Last flashcard", parent=self)
+        else:
+            self.i += 1
+            self.insert_flashcard.config(text=self.flashcards[self.i][2])
+
+    def find_flashcards(self):
+        # Check for flashcards from the database based on pack_ID
+        sql = "SELECT * FROM flashcards WHERE pack_ID = %s"
+        mycursor.execute(sql, (self.pack_ID,))
+        flashcards = mycursor.fetchall()
+        return flashcards
+
+class student_work(tk.Frame):
+    def __init__(self, root):
+        super().__init__(root)
+        self.config(bg="light pink")
+        self.grid(row=0, column=0, sticky="nesw")
 
 if __name__ == "__main__":
-    Main()
+    a = mainPG()
+    a.mainloop()
+#disconnects from mySQL
+mycursor.close()
+mydb.close()
