@@ -1,0 +1,82 @@
+import tkinter as tk
+from tkinter import *
+from tkinter import ttk
+from tkinter import messagebox
+import mysql.connector
+
+mydb = mysql.connector.connect(
+  host="localhost",
+  user="root",
+  password="Ex0-l7321",
+  database="nea"
+)
+mycursor = mydb.cursor()
+
+global username #test variable
+username = "teeJ0064T"
+
+# Creating a tutor profile after creating an account
+class tutor_profile(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("Create Profile")
+        self.geometry("500x800")
+        self.config(bg="light steel blue")
+
+        self.bio_label = self.create_default_label(self, text="Bio:", font=("Arial", 12))
+        self.bio_label.pack(padx=10, pady=10)
+
+        self.bio_entry = Text(self, font=("Arial", 15), wrap="word", height=5, width=40)
+        self.bio_entry.pack(padx=10, pady=10)
+
+        self.subject_label = self.create_default_label(self, text="What subject do you wish to teach:", font=("Arial", 12))
+        self.subject_label.pack(padx=10, pady=10)
+
+        self.subject = tk.StringVar() 
+        self.subject_combobox = ttk.Combobox(self, font = ("Arial",12), values=["Maths", "English", "Computer science", "Biology", "Physics", "Chemistry", "Languages", "History", "Geography", "Music", "Psychology", "Sociology"], state="readonly", textvariable=self.subject) 
+        self.subject_combobox.pack(padx=10, pady=10)
+
+        self.edu_lvl_label = self.create_default_label(self, text="What is the highest education level, you are capable for teaching for said subject:", font=("Arial", 12), wraplength=200)
+        self.edu_lvl_label.pack(padx=10, pady=10)
+
+        self.edu_lvl = tk.StringVar() 
+        self.edu_lvl_combobox = ttk.Combobox(self, font = ("Arial",12), values=["SAT/Primary", "GCSE/Secondary", "A-level/Sixth form", "Degree/University"], state="readonly", textvariable=self.edu_lvl) 
+        self.edu_lvl_combobox.pack(padx=10, pady=10)
+
+        self.pay_label = self.create_default_label(self, text="On average, how much would you like to earn £ per hour:", font=("Arial", 12))
+        self.pay_label.pack(padx=10, pady=10)
+
+        self.pay = tk.StringVar() 
+        self.pay_combobox = ttk.Combobox(self, font = ("Arial",12), values=["10", "20", "30", "40", "50", "60", "70", "80"], state="readonly", textvariable=self.pay) 
+        self.pay_combobox.pack(padx=10, pady=10)
+
+        self.pay_info_label = self.create_default_label(self, text="*Note: our staff will look over your profile and assign you an maximum amount you can charge based of your qualifications", font=("Arial", 10), wraplength=200)
+        self.pay_info_label.pack(padx=10, pady=10)
+
+        self.add_subject_button = Button(self, text="Add subject", font=("Arial", 15), bg="steel blue", fg="white", borderwidth=1, relief="solid", command= self.insert_subjects_sql)
+        self.add_subject_button.pack(padx=10, pady=10)
+
+    def insert_subjects_sql(self):
+        if self.subject.get() and self.edu_lvl.get() and self.pay.get():
+            sql_insert = f"INSERT INTO tutor_subjects (tutor_ID, subject, edu_lvl, pay) VALUES (%s, %s, %s, %s)"
+            val = (username, self.subject.get(), self.edu_lvl.get(), self.pay.get())
+            mycursor.execute(sql_insert, val)
+            mydb.commit()
+
+            self.subject_combobox.set('')
+            self.edu_lvl_combobox.set('')
+            self.pay_combobox.set('')
+        else:
+            messagebox.showerror("Error", "Please fill out all the details") 
+
+    def create_default_label(self, parent, **kwargs): # creates a dictionary for the defalut label format
+        default_style = {
+            "font": ("Arial", 12),
+            "bg": "light steel blue",
+            **kwargs} #function can accept any number of keyword arguments
+        return tk.Label(parent, **default_style)
+
+if __name__ == "__main__":
+    profile_window = tutor_profile()
+    profile_window.mainloop()
