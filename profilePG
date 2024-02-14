@@ -21,54 +21,109 @@ class tutor_profile(tk.Tk):
         super().__init__()
 
         self.title("Create Profile")
-        self.geometry("500x800")
+        self.geometry("540x550")
         self.config(bg="light steel blue")
 
-        self.bio_label = self.create_default_label(self, text="Bio:", font=("Arial", 12))
-        self.bio_label.pack(padx=10, pady=10)
-
-        self.bio_entry = Text(self, font=("Arial", 15), wrap="word", height=5, width=40)
-        self.bio_entry.pack(padx=10, pady=10)
-
-        self.subject_label = self.create_default_label(self, text="What subject do you wish to teach:", font=("Arial", 12))
-        self.subject_label.pack(padx=10, pady=10)
+        self.subject_label = self.create_default_label(self, text="What subject do you wish to teach:")
+        self.subject_label.grid(row=0, column=0, padx=20, pady=10)
 
         self.subject = tk.StringVar() 
         self.subject_combobox = ttk.Combobox(self, font = ("Arial",12), values=["Maths", "English", "Computer science", "Biology", "Physics", "Chemistry", "Languages", "History", "Geography", "Music", "Psychology", "Sociology"], state="readonly", textvariable=self.subject) 
-        self.subject_combobox.pack(padx=10, pady=10)
+        self.subject_combobox.grid(row=1, column=0, padx=20, pady=10)
 
-        self.edu_lvl_label = self.create_default_label(self, text="What is the highest education level, you are capable for teaching for said subject:", font=("Arial", 12), wraplength=200)
-        self.edu_lvl_label.pack(padx=10, pady=10)
+        self.edu_lvl_label = self.create_default_label(self, text="What is the highest education level, you are capable for teaching for said subject:", wraplength=200)
+        self.edu_lvl_label.grid(row=2, column=0, padx=20, pady=10)
 
         self.edu_lvl = tk.StringVar() 
         self.edu_lvl_combobox = ttk.Combobox(self, font = ("Arial",12), values=["SAT/Primary", "GCSE/Secondary", "A-level/Sixth form", "Degree/University"], state="readonly", textvariable=self.edu_lvl) 
-        self.edu_lvl_combobox.pack(padx=10, pady=10)
+        self.edu_lvl_combobox.grid(row=3, column=0, padx=20, pady=10)
 
-        self.pay_label = self.create_default_label(self, text="On average, how much would you like to earn £ per hour:", font=("Arial", 12))
-        self.pay_label.pack(padx=10, pady=10)
+        self.pay_label = self.create_default_label(self, text="On average, how much would you like to earn £ per hour:", wraplength=200)
+        self.pay_label.grid(row=4, column=0, padx=20, pady=10)
 
         self.pay = tk.StringVar() 
         self.pay_combobox = ttk.Combobox(self, font = ("Arial",12), values=["10", "20", "30", "40", "50", "60", "70", "80"], state="readonly", textvariable=self.pay) 
-        self.pay_combobox.pack(padx=10, pady=10)
+        self.pay_combobox.grid(row=5, column=0, padx=20, pady=10)
 
         self.pay_info_label = self.create_default_label(self, text="*Note: our staff will look over your profile and assign you an maximum amount you can charge based of your qualifications", font=("Arial", 10), wraplength=200)
-        self.pay_info_label.pack(padx=10, pady=10)
+        self.pay_info_label.grid(row=6, column=0, padx=20, pady=10)
 
         self.add_subject_button = Button(self, text="Add subject", font=("Arial", 15), bg="steel blue", fg="white", borderwidth=1, relief="solid", command= self.insert_subjects_sql)
-        self.add_subject_button.pack(padx=10, pady=10)
+        self.add_subject_button.grid(row=7, column=0, padx=20, pady=10)
+
+        self.qualification_label = self.create_default_label(self, text="Enter any qualifications")
+        self.qualification_label.grid(row=0, column=1, padx=20, pady=10)
+
+        self.qualification_entry = Entry(self, font = ("Arial",12))
+        self.qualification_entry.grid(row=1, column=1, padx=20, pady=10)
+
+        self.status_label = self.create_default_label(self, text="Status:", )
+        self.status_label.grid(row=2, column=1, padx=20, pady=20)
+
+        self.status = tk.StringVar() 
+        self.status_combobox = ttk.Combobox(self, font = ("Arial",12), values=["In-progress", "Completed"], state="readonly", textvariable=self.status) 
+        self.status_combobox.grid(row=3, column=1, padx=20, pady=10)
+
+        self.grade_IA_label = self.create_default_label(self, text="The grade you recieved (if applicable):", wraplength=200)
+        self.grade_IA_label.grid(row=4, column=1, padx=20, pady=10)
+
+        self.grade_IA_entry = Entry(self, font = ("Arial",12))
+        self.grade_IA_entry.grid(row=5, column=1, padx=20, pady=10)
+
+        self.add_subject_button = Button(self, text="Add qualification", font=("Arial", 15), bg="steel blue", fg="white", borderwidth=1, relief="solid", command= self.insert_qualification_sql)
+        self.add_subject_button.grid(row=6, column=1, padx=20, pady=10)
+
+        self.add_subject_button = Button(self, text="Done", font=("Arial", 15), bg="medium blue", fg="white", width=14, borderwidth=1, relief="solid", command= lambda:self.finished_sql(self))
+        self.add_subject_button.grid(row=7, column=1, padx=20, pady=10)
 
     def insert_subjects_sql(self):
-        if self.subject.get() and self.edu_lvl.get() and self.pay.get():
+        unique = False
+        sql = f"SELECT * FROM tutor_subjects WHERE subject = %s AND tutor_ID = %s"
+        mycursor.execute(sql, (self.subject.get(), username,))
+        result = mycursor.fetchone()
+        if result is None:
+                unique = True
+        if self.subject.get() and self.edu_lvl.get() and self.pay.get() and unique:
             sql_insert = f"INSERT INTO tutor_subjects (tutor_ID, subject, edu_lvl, pay) VALUES (%s, %s, %s, %s)"
             val = (username, self.subject.get(), self.edu_lvl.get(), self.pay.get())
             mycursor.execute(sql_insert, val)
             mydb.commit()
 
+            messagebox.showinfo("Inserted", "Subject has been entered")
+
             self.subject_combobox.set('')
             self.edu_lvl_combobox.set('')
             self.pay_combobox.set('')
+        elif not unique:
+             messagebox.showerror("Error", "Subject has already been entered")
         else:
             messagebox.showerror("Error", "Please fill out all the details") 
+    
+    def insert_qualification_sql(self):
+        unique = False
+        sql = f"SELECT * FROM tutor_qualifications WHERE qualification = %s AND tutor_ID = %s"
+        mycursor.execute(sql, (self.qualification_entry.get(), username,))
+        result = mycursor.fetchone()
+        if result is None:
+                unique = True
+        if self.qualification_entry.get() and self.status.get() and self.grade_IA_entry.get and unique:
+            sql_insert = f"INSERT INTO tutor_qualifications (tutor_ID, qualification, status, grade_IA) VALUES (%s, %s, %s, %s)"
+            val = (username, self.qualification_entry.get(), self.status.get(), self.grade_IA_entry.get())
+            mycursor.execute(sql_insert, val)
+            mydb.commit()
+
+            messagebox.showinfo("Inserted", "Qualification has been entered")
+
+            self.qualification_entry.delete(0, tk.END)
+            self.status_combobox.set('')
+            self.grade_IA_entry.delete(0, tk.END)
+        elif not unique:
+             messagebox.showerror("Error", "Qualification has already been entered")
+        else:
+            messagebox.showerror("Error", "Please fill out all the details") 
+    
+    def finished_sql(self, window):
+        window.destroy()
 
     def create_default_label(self, parent, **kwargs): # creates a dictionary for the defalut label format
         default_style = {
@@ -80,3 +135,4 @@ class tutor_profile(tk.Tk):
 if __name__ == "__main__":
     profile_window = tutor_profile()
     profile_window.mainloop()
+
