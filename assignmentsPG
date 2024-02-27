@@ -4,6 +4,7 @@ from tkinter import ttk
 from tkinter import messagebox
 from datetime import datetime, timedelta, date
 from datetime import datetime
+import random
 import calendar
 import random
 import mysql.connector
@@ -17,6 +18,9 @@ mydb = mysql.connector.connect(
   database="nea"
 )
 mycursor = mydb.cursor()
+
+global username
+username = "teeJ0064T"
 
 class mainPG(tk.Tk):
     def __init__(self):
@@ -235,22 +239,25 @@ class create_assignments(tk.Frame):
         self.config(bg="light steel blue")
         self.grid(row=0, column=0, sticky="nesw")
 
-        for i in range(6):
-            self.rowconfigure(i, weight=1, minsize=20)
+        for i in range(8):
+            self.rowconfigure(i, weight=1, minsize=10)
             for j in range(3):
-                self.columnconfigure(j, weight=1, minsize=20)
+                self.columnconfigure(j, weight=1, minsize=10)
 
         self.create_pack_button = self.create_default_button(self, text="New flashcard pack", command=create_flashcard_pack)
         self.create_pack_button.grid(row=1, column=1, sticky="nsew")
 
-        self.label = self.create_default_label(self, text="Find flashcard pack:")
-        self.label.grid(row=3, column=1, sticky="nesw")
+        self.findFC_button = self.create_default_button(self, text="Explore flashcards", command=lambda: self.find_packs(""))
+        self.findFC_button.grid(row=3, column=1, sticky="nsew")
 
         self.find_entry = Entry(self, font=("Arial", 20), bg="white", borderwidth=1, relief="solid", justify="center")
         self.find_entry.grid(row=4, column=1, sticky="nesw")
 
         self.find_button = self.create_default_button(self, text="Enter", font=("Arial", 15), command=self.find_pack_ID)
         self.find_button.grid(row=4, column=2)
+
+        self.myFC_button = self.create_default_button(self, text="My flashcards", command=lambda: self.find_packs(username))
+        self.myFC_button.grid(row=6, column=1, sticky="nsew")
 
     def create_default_label(self, parent, **kwargs): # creates a dictionary for the defalut label format
         default_style = {
@@ -271,7 +278,7 @@ class create_assignments(tk.Frame):
             "fg": "white",
             **kwargs} #function can accept any number of keyword arguments
         return tk.Button(parent, **default_style)
-
+    
     def find_pack_ID(self):
         pack_ID = self.find_entry.get()
         sql = f"SELECT * FROM flashcard_packs WHERE pack_ID = %s"
@@ -281,7 +288,72 @@ class create_assignments(tk.Frame):
         if result == None:
             messagebox.showerror("Error", "Cannot find pack")
         else:
-            display_flashcards(result).mainloop()
+            random_window = tk.Tk()
+            random_window.title("Format")
+            random_window.geometry("300x80")
+
+            def random_check(check):
+                random_window.destroy()
+                display_flashcards(result, check).mainloop()
+
+            random_button = Button(random_window, text="Random", command=lambda: random_check(True), font=("Arial", 20), bg="steel blue", fg="white")
+            random_button.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+
+            inOrder_button = Button(random_window, text="In order", command=lambda: random_check(False), font=("Arial", 20), bg="steel blue", fg="white")
+            inOrder_button.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
+
+        random_window.mainloop()
+
+
+    def find_packs(self, var1):
+        display_packs = tk.Toplevel(self)
+
+        if var1 == "":
+            sql = f"SELECT * FROM flashcard_packs"
+            mycursor.execute(sql,)
+            result = mycursor.fetchall()
+            display_packs.title("Packs")
+        else:
+            sql = f"SELECT * FROM flashcard_packs WHERE pack_creator = %s"
+            mycursor.execute(sql, (username,))
+            result = mycursor.fetchall()
+            display_packs.title("My packs")
+
+        display_packs.geometry("280x400")
+
+        # Create a Canvas widget inside the Toplevel window
+        self.canvas = tk.Canvas(display_packs, bg="light steel blue")
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Create a Scrollbar widget and connect it to the Canvas
+        scrollbar = ttk.Scrollbar(display_packs, orient=tk.VERTICAL, command=self.canvas.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Configure the Canvas to use the Scrollbar
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+
+        # Create a frame inside the Canvas to hold the content
+        self.frame = tk.Frame(self.canvas)
+        self.frame.config(bg= "light steel blue")
+        self.canvas.create_window((0, 0), window=self.frame, anchor=tk.NW)
+
+        # Add content to the frame (you can customize this part)
+        for i in range (0, len(result)):
+            display_text = f"Pack name: {result[i][1]}\n Pack ID: {result[i][0]} \n Pack creator: {result[i][2]}"
+            self.button = Label(self.frame, text=display_text, font=("Arial", 15), borderwidth= 1, relief="solid", bg="white") 
+            self.button.grid(row=i, sticky="nesw")
+
+        # Bind the Canvas to handle scrolling events
+        display_packs.bind("<Configure>", self.on_canvas_configure)
+        display_packs.bind("<MouseWheel>", self.on_mousewheel)
+
+    def on_canvas_configure(self, event):
+        # Update the scroll region to include the entire frame
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def on_mousewheel(self, event):
+        # Handle mouse wheel scroll events
+        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
 class create_flashcard_pack(tk.Tk):
     def __init__(self):
@@ -381,9 +453,8 @@ class create_flashcard_pack(tk.Tk):
         else:
             messagebox.showerror("Error", "Empty pack: deletion", parent=window)
 
-
 class display_flashcards(tk.Tk):
-    def __init__(self, result):
+    def __init__(self, result, random):
         super().__init__()
 
         self.title(result[1])
@@ -391,7 +462,7 @@ class display_flashcards(tk.Tk):
         self.minsize(1000, 600)
         self.config(bg="light steel blue")
         self.pack_ID = result[0]
-        self.flashcards = self.find_flashcards()
+        self.flashcards = self.find_flashcards(random)
 
         for i in range(3):
             self.columnconfigure(i, weight=1, minsize=20)
@@ -430,12 +501,15 @@ class display_flashcards(tk.Tk):
             self.i += 1
             self.insert_flashcard.config(text=self.flashcards[self.i][2])
 
-    def find_flashcards(self):
+    def find_flashcards(self, check):
         # Check for flashcards from the database based on pack_ID
         sql = "SELECT * FROM flashcards WHERE pack_ID = %s"
         mycursor.execute(sql, (self.pack_ID,))
         flashcards = mycursor.fetchall()
+        if check:
+            random.shuffle(flashcards)
         return flashcards
+
 
 class student_work(tk.Frame):
     def __init__(self, root):
@@ -449,3 +523,4 @@ if __name__ == "__main__":
 #disconnects from mySQL
 mycursor.close()
 mydb.close()
+
