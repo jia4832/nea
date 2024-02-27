@@ -1,0 +1,297 @@
+import tkinter as tk
+from tkinter import *
+from tkinter import ttk
+from tkinter import messagebox
+import mysql.connector
+
+mydb = mysql.connector.connect(
+  host="localhost",
+  user="root",
+  password="Ex0-l7321",
+  database="nea"
+)
+mycursor = mydb.cursor()
+
+class mainPG(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("Main Page")
+        self.geometry("1440x810")
+        self.config(bg="light steel blue")
+
+        self.create_menu_bar()
+
+        self.sub_frame = tk.Frame(self)
+        self.sub_frame.grid(row=0, column=0)
+
+        self.frame3 = find_tutors(self.sub_frame)
+
+        self.show_findTutors()
+
+    def create_menu_bar(self):
+        # Create a menu bar
+        menubar = tk.Menu()
+
+        # adds a singular menu item
+        menubar.add_command(label="Timetable", command=self.asd)
+
+        # adds a menu item with drop down menu items
+        assignments_menu = tk.Menu(menubar, tearoff=0)
+        assignments_menu.add_command(label="Upcoming", command=self.asd)
+        assignments_menu.add_command(label="Overdue", command=self.asd)
+        assignments_menu.add_command(label="Completed", command=self.asd)
+        menubar.add_cascade(label="Assignments", menu=assignments_menu) 
+
+        tutors_menu = tk.Menu(menubar, tearoff=0)
+        tutors_menu.add_command(label="Find Tutors", command=self.show_findTutors)
+        tutors_menu.add_command(label="My Tutors", command=self.asd)
+        menubar.add_cascade(label="Tutors", menu=tutors_menu)
+
+        settings_menu = tk.Menu(menubar, tearoff=0)
+        settings_menu.add_command(label="Profile", command=self.asd)
+        settings_menu.add_command(label="Exit", command=self.destroy)
+        menubar.add_cascade(label="Settings", menu=settings_menu)
+
+        self.config(menu=menubar)
+    
+    def asd(self):
+        messagebox.showinfo("asd", "Incomplete")
+
+    def show_findTutors(self):
+        self.frame3.lift()
+
+class find_tutors(tk.Frame):
+    def __init__(self, root):
+        super().__init__(root)
+        self.config(bg="light steel blue")
+        self.grid(row=0, column=0, sticky="nsew")
+        
+        for i in range(9):
+            for j in range(2):
+                self.columnconfigure(j, weight=1, minsize=20)
+                self.rowconfigure(i, weight=1, minsize=20)
+                empty_label = Label(self, bg="light steel blue")
+                empty_label.grid(row=i, column=j, sticky="nesw")
+
+        for i in range(0, 8, 2):
+                self.empty_label = Label(self, bg="light steel blue")
+                self.empty_label.grid(row=i, column=0, rowspan=2, sticky="nesw")
+
+        for i in range(0, 8, 2):
+                self.empty_label = Label(self, borderwidth= 1, relief="solid", bg="white", height=12, width=170)
+                self.empty_label.grid(row=i, column=1, rowspan=2, sticky="nesw")
+
+        self.subject_label = self.create_default_label(self, text="Subject:")
+        self.subject_label.grid(row=0, column=0, padx=10, pady=10)
+
+        self.subject = tk.StringVar() 
+        self.subject_combobox = ttk.Combobox(self, font = ("Arial",15), values=["Maths", "English", "Computer science", "Biology", "Physics", "Chemistry", "Languages", "History", "Geography", "Music", "Psychology", "Sociology"], state="readonly", textvariable=self.subject, width = 15) 
+        self.subject_combobox.grid(row=1, column=0, padx=10, pady=10)
+
+        self.edu_lvl_label = self.create_default_label(self, text="Education level:")
+        self.edu_lvl_label.grid(row=2, column=0, padx=10, pady=10)
+        
+        self.edu_lvl = tk.StringVar() 
+        self.edu_lvl_combobox = ttk.Combobox(self, font = ("Arial",15), values=["SAT/Primary", "GCSE/Secondary", "A-level/Sixth form", "Degree/University"], state="readonly", textvariable=self.edu_lvl, width = 15) 
+        self.edu_lvl_combobox.grid(row=3, column=0, padx=10, pady=10)
+
+        self.rating_label = self.create_default_label(self, text="Minimum rating:")
+        self.rating_label.grid(row=4, column=0, padx=10, pady=10)
+
+        self.rating = tk.StringVar() 
+        self.rating_combobox = ttk.Combobox(self, font = ("Arial",15), values=["1 star", "2 star", "3 star", "4 star", "5 star"], state="readonly", textvariable=self.rating, width = 15) 
+        self.rating_combobox.grid(row=5, column=0, padx=10, pady=10)
+
+        self.pay_label = self.create_default_label(self, text="Max price per hour:")
+        self.pay_label.grid(row=6, column=0, padx=20, pady=10)
+
+        self.pay = tk.StringVar() 
+        self.pay_combobox = ttk.Combobox(self, font = ("Arial",12), values=["10", "20", "30", "40", "50", "60", "70", "80"], state="readonly", textvariable=self.pay, width = 15) 
+        self.pay_combobox.grid(row=7, column=0, padx=20, pady=10)
+
+        self.search_button = Button(self, text="Search", font=("Arial", 15), fg = "white", bg="steel blue", borderwidth= 1, relief="solid", command=self.search_tutors)
+        self.search_button.grid(row=8, column=0, padx=10,  pady=10, sticky="sw")
+    
+    def search_tutors(self):
+        subject = self.subject.get()
+        edu_lvl = self.edu_lvl.get()
+        rating = self.rating.get()
+        rating = int(rating[0]) if rating else None
+        price = self.pay.get()
+        print(subject, edu_lvl, rating, price)
+
+        if subject == "" and edu_lvl == "": #simplification using chatGPT
+            messagebox.showerror("Error", "Enter a subject and level of education")
+        elif subject == "":
+            messagebox.showerror("Error", "Enter a subject")
+        elif edu_lvl == "":
+            messagebox.showerror("Error", "Enter the level of education")
+        else:
+            sql = "SELECT * FROM tutor_accounts WHERE tutor_ID IN (SELECT tutor_ID FROM tutor_subjects WHERE subject = %s AND edu_lvl = %s"
+            if rating:
+                sql += " AND rating >= %s"
+                values = (subject, edu_lvl, rating)
+            else:
+                values = (subject, edu_lvl)
+
+            if price:
+                sql += " AND pay <= %s"
+                values += (price,)
+
+            sql += ") ORDER BY rating DESC"
+
+            mycursor.execute(sql, values)
+            self.tutors = mycursor.fetchall()
+
+            self.display_tutors_4()
+
+    def display_tutors_4(self):
+        for i in range(0, 8, 2):
+                self.empty_label = Label(self, borderwidth= 1, relief="solid", bg="white", height=12, width=170)
+                self.empty_label.grid(row=i, column=1, rowspan=2, sticky="nesw")
+        a = 0
+        for b in range (min(4, len(self.tutors))):
+            tutor_info = self.tutors[b]
+            display_text = f"Tutor ID: {tutor_info[0]}\n Full name: {tutor_info[2]}{tutor_info[3]} \n Rating: {tutor_info[5]} stars"
+            self.button = Button(self, text=display_text, font=("Arial", 20), borderwidth= 1, relief="solid", bg="white", command=lambda info=tutor_info: self.display_tutor_information(info)) #correction using chatGPT
+            self.button.grid(row=a, column=1, rowspan=2, sticky="nesw")
+            a += 2
+        if len(self.tutors) > 4:
+            self.more_button = Button(self, text="More", font=("Arial", 15), fg = "white", bg="steel blue", borderwidth= 1, relief="solid", command= lambda: self.more_tutors(self.tutors))
+            self.more_button.grid(row=8, column=1,  pady=10, sticky="es")
+
+    def display_tutor_information(self, tutor_info):
+        display_tutor_window = tk.Toplevel(self)
+        display_tutor_window.title("Tutor ID: " + str(tutor_info[0]))
+        display_tutor_window.geometry("800x400")
+
+        # Create a Canvas widget inside the Toplevel window
+        self.canvas = tk.Canvas(display_tutor_window, bg="light steel blue")
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Create a Scrollbar widget and connect it to the Canvas
+        scrollbar = ttk.Scrollbar(display_tutor_window, orient=tk.VERTICAL, command=self.canvas.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Configure the Canvas to use the Scrollbar
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+
+        # Create a frame inside the Canvas to hold the content
+        self.frame = tk.Frame(self.canvas)
+        self.frame.config(bg= "light steel blue")
+        self.canvas.create_window((0, 0), window=self.frame, anchor=tk.NW)
+
+        # Add content to the frame (you can customize this part)
+        self.photo = self.create_default_label(self.frame, text="Photo")
+        self.photo.grid(row=0, column=0, sticky="nesw", pady=10, padx=10)
+
+        self.display_text = f"Tutor ID: {tutor_info[0]}\nFull name: {tutor_info[2]} {tutor_info[3]} \nRating: {tutor_info[5]} stars"
+        self.basic_info = self.create_default_label(self.frame, text=self.display_text, justify=tk.LEFT)
+        self.basic_info.grid(row=0, column=1, sticky="nesw", pady=10, padx=10)
+
+        self.bio_label = self.create_default_label(self.frame, text="Bio")
+        self.bio_label.grid(row=1, column=0, columnspan=2, sticky="nesw", pady=10, padx=10)
+
+        self.bio_entry = Label(self.frame, text=tutor_info[6], font=("Arial", 15), wraplength=400, height=5, width=40, borderwidth= 1, relief="solid")
+        self.bio_entry.grid(row=2, column=0, columnspan=2, sticky="nesw", pady=10, padx=10)
+
+        self.subject_label = self.create_default_label(self.frame, text="Subjects:")
+        self.subject_label.grid(row=3, column=0, sticky="nesw", pady=10, padx=10)
+        self.subjects= self.get_subjects(tutor_info[0])
+
+        if self.subjects:
+            i = 4
+            for row in self.subjects:
+                label_text = f"Subject: {row[1]} \nEducation level: {row[2]} \nPrice per hour: {row[4]}"
+                new_label = Label(self.frame, text=label_text, wraplength=400, width = 35, bg="medium blue", fg="white", font=("Arial", 12))
+                new_label.grid(row=i, column=0, pady=10, padx=10)
+                i += 1
+
+        self.qualifications_label = self.create_default_label(self.frame, text="Qualifications:")
+        self.qualifications_label.grid(row=3, column=1, sticky="nesw", pady=10, padx=10)
+
+        self.qualifications= self.get_qualifications(tutor_info[0])
+
+        if self.qualifications:
+            i = 4
+            for row in self.qualifications:
+                label_text = f"Qualification: {row[1]} \n Status: {row[2]} \n Grade: {row[3]}"
+                new_label = Label(self.frame, text=label_text, wraplength=400, width = 35, bg="medium blue", fg="white", font=("Arial", 12))
+                new_label.grid(row=i, column=1, pady=10, padx=10)
+                i += 1
+
+        self.request_button = Button(self.frame, text="Send request", font=("Arial", 12), bg="steel blue", fg="white")
+        self.request_button.grid(row=i+1, column=0, pady=10, padx=10, sticky="sw")
+
+        # Bind the Canvas to handle scrolling events
+        display_tutor_window.bind("<Configure>", self.on_canvas_configure)
+        display_tutor_window.bind("<MouseWheel>", self.on_mousewheel)
+    
+    def get_subjects(self, username):
+        sql = f"SELECT * FROM tutor_subjects WHERE tutor_ID = %s"
+        mycursor.execute(sql, (username,))
+        result = mycursor.fetchall()
+        if not result:
+            return None
+        else:
+            return result
+        
+    def get_qualifications(self, username):
+        sql = f"SELECT * FROM tutor_qualifications WHERE tutor_ID = %s"
+        mycursor.execute(sql, (username,))
+        result = mycursor.fetchall()
+        if not result:
+            return None
+        else:
+            return result
+
+    def more_tutors(self, tutor_info):
+        display_more_tutors = tk.Toplevel(self)
+        display_more_tutors.title("More Tutors")
+        display_more_tutors.geometry("600x600")
+
+        # Create a Canvas widget inside the Toplevel window
+        self.canvas = tk.Canvas(display_more_tutors, bg="light steel blue")
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Create a Scrollbar widget and connect it to the Canvas
+        scrollbar = ttk.Scrollbar(display_more_tutors, orient=tk.VERTICAL, command=self.canvas.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Configure the Canvas to use the Scrollbar
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+
+        # Create a frame inside the Canvas to hold the content
+        self.frame = tk.Frame(self.canvas)
+        self.frame.config(bg= "light steel blue")
+        self.canvas.create_window((0, 0), window=self.frame, anchor=tk.NW)
+
+        # Add content to the frame (you can customize this part)
+        for i in range (4, len(tutor_info)):
+            display_text = f"Tutor ID: {tutor_info[i][0]}\n Full name: {tutor_info[i][2]}{tutor_info[i][3]} \n Rating: {tutor_info[i][5]} stars"
+            self.button = Button(self.frame, text=display_text, font=("Arial", 20), borderwidth= 1, relief="solid", bg="white", command=lambda info=tutor_info[i]: self.display_tutor_information(info)) #correction using chatGPT
+            self.button.grid(row=i, sticky="nesw")
+
+        # Bind the Canvas to handle scrolling events
+        display_more_tutors.bind("<Configure>", self.on_canvas_configure)
+        display_more_tutors.bind("<MouseWheel>", self.on_mousewheel)
+
+    def on_canvas_configure(self, event):
+        # Update the scroll region to include the entire frame
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def on_mousewheel(self, event):
+        # Handle mouse wheel scroll events
+        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def create_default_label(self, parent, **kwargs): # creates a dictionary for the defalut label format
+        default_style = {
+            "font": ("Arial", 15),
+            "bg": ("light steel blue"), 
+            **kwargs} #function can accept any number of keyword arguments
+        return tk.Label(parent, **default_style)
+
+if __name__ == "__main__":
+    a = mainPG()
+    a.mainloop()
