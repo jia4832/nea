@@ -12,6 +12,9 @@ mydb = mysql.connector.connect(
 )
 mycursor = mydb.cursor()
 
+global username
+username = "teeR0843S"
+
 class mainPG(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -119,7 +122,6 @@ class find_tutors(tk.Frame):
         rating = self.rating.get()
         rating = int(rating[0]) if rating else None
         price = self.pay.get()
-        print(subject, edu_lvl, rating, price)
 
         if subject == "" and edu_lvl == "": #simplification using chatGPT
             messagebox.showerror("Error", "Enter a subject and level of education")
@@ -221,7 +223,7 @@ class find_tutors(tk.Frame):
                 new_label.grid(row=i, column=1, pady=10, padx=10)
                 i += 1
 
-        self.request_button = Button(self.frame, text="Send request", font=("Arial", 12), bg="steel blue", fg="white")
+        self.request_button = Button(self.frame, text="Send request", font=("Arial", 12), bg="steel blue", fg="white", command= lambda: self.check_request(tutor_info[0], display_tutor_window))
         self.request_button.grid(row=i+1, column=0, pady=10, padx=10, sticky="sw")
 
         # Bind the Canvas to handle scrolling events
@@ -247,7 +249,7 @@ class find_tutors(tk.Frame):
             return result
 
     def more_tutors(self, tutor_info):
-        display_more_tutors = tk.Toplevel(self)
+        display_more_tutors = tk(self)
         display_more_tutors.title("More Tutors")
         display_more_tutors.geometry("600x600")
 
@@ -268,9 +270,9 @@ class find_tutors(tk.Frame):
         self.canvas.create_window((0, 0), window=self.frame, anchor=tk.NW)
 
         # Add content to the frame (you can customize this part)
-        for i in range (4, len(tutor_info)):
+        for i in range(4, len(tutor_info)):
             display_text = f"Tutor ID: {tutor_info[i][0]}\n Full name: {tutor_info[i][2]}{tutor_info[i][3]} \n Rating: {tutor_info[i][5]} stars"
-            self.button = Button(self.frame, text=display_text, font=("Arial", 20), borderwidth= 1, relief="solid", bg="white", command=lambda info=tutor_info[i]: self.display_tutor_information(info)) #correction using chatGPT
+            self.button = Button(self.frame, text=display_text, font=("Arial", 20), borderwidth=1, relief="solid", bg="white", command=lambda info=tutor_info[i]: self.display_tutor_information(info))
             self.button.grid(row=i, sticky="nesw")
 
         # Bind the Canvas to handle scrolling events
@@ -278,12 +280,45 @@ class find_tutors(tk.Frame):
         display_more_tutors.bind("<MouseWheel>", self.on_mousewheel)
 
     def on_canvas_configure(self, event):
-        # Update the scroll region to include the entire frame
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        if hasattr(self, 'canvas') and self.canvas.winfo_exists():
+            # Update the scroll region to include the entire frame
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def on_mousewheel(self, event):
-        # Handle mouse wheel scroll events
-        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        if hasattr(self, 'canvas') and self.canvas.winfo_exists():
+            # Check if canvas exists and is not destroyed
+            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def check_request(self, tutor_ID, prev_window):
+        sql = f"SELECT * FROM requests WHERE student_ID = %s AND tutor_ID = %s"
+        mycursor.execute(sql, (username, tutor_ID))
+        result = mycursor.fetchone()
+
+        if result == None:
+            self.request_message(tutor_ID)
+        else:
+            messagebox.showerror("Error", f"A request has already been sent \nStatus: {result[3]}", parent=prev_window)
+    
+    def request_message(self, tutor_ID):
+        request_window = tk.Tk()
+        request_window.title(f"Send request to {tutor_ID}")
+        request_window.geometry("500x200")
+
+        self.message = tk.Text(request_window, font=("Arial", 15), wrap=tk.WORD, height=5, width=40)
+        self.message.pack(padx=10, pady=10)
+
+        self.done_button = Button(request_window, text="Done", font=("Arial", 12), command= lambda:self.send_request(tutor_ID, request_window))
+        self.done_button.pack(padx=10, pady=10)
+        
+        request_window.mainloop()
+
+    def send_request(self, tutor_ID, prev_window):
+        message = self.message.get("1.0", tk.END).strip()
+        sql = "INSERT INTO requests (tutor_ID, student_ID, status, message) VALUES (%s, %s, %s, %s)"
+        val = (tutor_ID, username, "Pending", message)
+        mycursor.execute(sql, val)
+        mydb.commit()
+        prev_window.destroy()
 
     def create_default_label(self, parent, **kwargs): # creates a dictionary for the defalut label format
         default_style = {
