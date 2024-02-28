@@ -1,0 +1,47 @@
+class requests(tk.Frame):
+    def __init__(self, root):
+        super().__init__(root)
+        self.config(bg="light green")
+        self.grid(row=0, column=0, sticky="nesw")
+
+        self.load_requests()
+
+    def load_requests(self):
+        for widget in self.winfo_children():
+            widget.destroy()
+
+        # Fetch updated data
+        sql = f"SELECT * FROM requests WHERE tutor_ID = %s and status = %s"
+        mycursor.execute(sql, (username, "Pending"))
+        result = mycursor.fetchall()
+
+        for i, a in enumerate(result):
+            display_text = f"Request ID: {a[0]}\nStudent ID: {a[2]}"
+            button = Button(self, text=display_text, font=("Arial", 20), borderwidth=1, relief="solid", bg="white", width=20, command=lambda info=a: self.response(info))
+            button.grid(row=i // 4, column=i % 4, sticky="nesw", padx=10, pady=10)
+
+    def response(self, student_info):
+        response_window = Toplevel()
+        response_window.title("Response")
+        response_window.geometry("470x200")
+        response_window.configure(bg="light steel blue")
+
+        def insert_response(response):
+            response_window.destroy()
+            sql = f"UPDATE requests SET status = %s WHERE request_ID = %s"
+            mycursor.execute(sql, (response, student_info[0]))
+            mydb.commit()
+            print("Status updated")
+            
+            # Reload the requests frame after updating the status
+            self.load_requests()
+
+        display_message = Label(response_window, text=student_info[4], font=("Arial", 15), wraplength=400, height=5, width=40, bg="white")
+        display_message.grid(row=0, column=0, columnspan=2, padx=10, pady=10)
+
+        accept_button = Button(response_window, text="Accept", command=lambda: insert_response("Accepted"), font=("Arial", 15), bg="steel blue", fg="white")
+        accept_button.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+
+        reject_button = Button(response_window, text="Reject", command=lambda: insert_response("Rejected"), font=("Arial", 15), bg="steel blue", fg="white")
+        reject_button.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
+        response_window.mainloop()
